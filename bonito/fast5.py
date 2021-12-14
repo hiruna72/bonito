@@ -24,11 +24,9 @@ class Read:
 
     def __init__(self, read, filename, meta=False, s5=None, use_slow5=False):
         if(use_slow5):
-            sys.stderr.write("use_slow5\n")
-
             self.meta = meta
             self.read_id = read['read_id']
-            self.filename = filename.name
+            self.filename = filename
             self.run_id = s5.get_header_value('run_id')
             if type(self.run_id) in (bytes, np.bytes_):
                 self.run_id = self.run_id.decode('ascii')
@@ -84,8 +82,6 @@ class Read:
             else:
                 self.signal = norm_by_noisiest_section(scaled)
         else:
-            sys.stderr.write("use_fast5\n")
-
             self.meta = meta
             self.read_id = read.read_id
             self.filename = filename.name
@@ -338,7 +334,7 @@ def get_reads(directory, read_ids=None, skip=False, n_proc=1, recursive=False, c
     if(use_slow5):
         sys.stderr.write("use_slow5\n")
         pattern = "**/*.slow5" if recursive else "*.slow5"
-        files = (Path(x) for x in glob(directory + "/" + pattern, recursive=True))
+        files = (x for x in glob(directory + "/" + pattern, recursive=True))
         for file in files:
             s5 = pyslow5.Open(file, 'r')
             for read in s5.seq_reads(pA=False, aux='all'):
