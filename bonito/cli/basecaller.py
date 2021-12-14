@@ -96,7 +96,7 @@ def main(args):
     reads = get_reads(
         args.reads_directory, n_proc=8, recursive=args.recursive,
         read_ids=column_to_set(args.read_ids), skip=args.skip,
-        cancel=process_cancel()
+        cancel=process_cancel(), use_slow5=args.slow5
     )
 
     if args.max_reads:
@@ -152,6 +152,7 @@ def argparser():
     )
     parser.add_argument("model_directory")
     parser.add_argument("reads_directory")
+    parser.add_argument("--slow5", action="store_true", default=False)
     parser.add_argument("--reference")
     parser.add_argument("--modified-bases", nargs="+")
     parser.add_argument("--modified-base-model")
