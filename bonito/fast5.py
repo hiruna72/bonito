@@ -22,7 +22,7 @@ import pyslow5
 
 class Read:
 
-    def __init__(self, read, filename, meta=False, s5=None, use_slow5=False):
+    def __init__(self, read, filename, meta=False, s5=None, use_slow5=False, signal_scaled=True):
         if(use_slow5):
             self.meta = meta
             self.read_id = read['read_id']
@@ -68,8 +68,11 @@ class Read:
             start_time = exp_start_dt + timedelta(seconds=self.start)
             self.start_time = start_time.replace(microsecond=0).isoformat()
 
-            raw = read['signal']
-            scaled = np.array(self.scaling * (raw + self.offset), dtype=np.float32)
+            if(signal_scaled):
+                scaled = read['signal']
+            else:
+                raw = read['signal']
+                scaled = np.array(self.scaling * (raw + self.offset), dtype=np.float32)
 
             trim_start, _ = trim(scaled[:8000])
             scaled = scaled[trim_start:]
@@ -337,8 +340,13 @@ def get_reads(directory, read_ids=None, skip=False, n_proc=1, recursive=False, c
         files = (x for x in glob(directory + "/" + pattern, recursive=True))
         for file in files:
             s5 = pyslow5.Open(file, 'r')
-            for read in s5.seq_reads(pA=False, aux='all'):
-                yield Read(read, file, False, s5, use_slow5)
+            for read in s5.seq_reads(pA=True, aux='all'):
+                yield Read(read, file, False, s5, use_slow5, True)
+
+        # for file in files:
+        #     s5 = pyslow5.Open(file, 'r')
+        #     for read in s5.seq_reads(pA=False, aux='all'):
+        #         yield Read(read, file, False, s5, use_slow5, False)
 
     else:
         sys.stderr.write("use_fast5\n")
