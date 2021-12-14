@@ -17,3 +17,4 @@ torch~=1.10.0
 koi-cuda102==0.0.5
 cupy-cuda102==9.6.0
 ont-seqdist-cuda102==0.0.4
+pyslow5==0.3.0
