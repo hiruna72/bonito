@@ -333,7 +333,7 @@ def get_reads(directory, read_ids=None, skip=False, n_proc=1, recursive=False, c
     """
     if(use_slow5):
         sys.stderr.write("use_slow5\n")
-        pattern = "**/*.slow5" if recursive else "*.slow5"
+        pattern = "**/*.*low5" if recursive else "*.*low5"
         files = (x for x in glob(directory + "/" + pattern, recursive=True))
         for file in files:
             s5 = pyslow5.Open(file, 'r')
