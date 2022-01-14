@@ -19,10 +19,12 @@ from scipy.signal import find_peaks
 from ont_fast5_api.fast5_interface import get_fast5_file
 
 import pyslow5
+from time import perf_counter
 
 class Read:
 
-    def __init__(self, read, filename, meta=False, s5=None, use_slow5=False, signal_scaled=True):
+    def __init__(self, read, filename, meta=False, s5=None, use_slow5=False, reads_start_time_precise=None, signal_scaled=True):
+        time0 = perf_counter()
         if(use_slow5):
             self.meta = meta
             self.read_id = read['read_id']
@@ -147,6 +149,9 @@ class Read:
                 self.signal = (scaled - med) / mad
             else:
                 self.signal = norm_by_noisiest_section(scaled)
+        if(reads_start_time_precise):
+            reads_start_time_precise[0] = reads_start_time_precise[0] + (perf_counter()-time0)
+
 
     def __repr__(self):
         return "Read('%s')" % self.read_id
@@ -334,6 +339,8 @@ def get_reads(directory, read_ids=None, skip=False, n_proc=1, recursive=False, c
     """
     Get all reads in a given `directory`.
     """
+    reads_start_time = perf_counter()
+    reads_start_time_precise = [0.0]
     if(use_slow5):
         sys.stderr.write("use_slow5\n")
         pattern = "**/*.*low5" if recursive else "*.*low5"
@@ -341,7 +348,12 @@ def get_reads(directory, read_ids=None, skip=False, n_proc=1, recursive=False, c
         for file in files:
             s5 = pyslow5.Open(file, 'r')
             for read in s5.seq_reads(pA=True, aux='all'):
-                yield Read(read, file, False, s5, use_slow5, True)
+                yield Read(read, file, False, s5, use_slow5, reads_start_time_precise, True)
+                if cancel is not None and cancel.is_set():
+                    return
+        slow5_read_duration = perf_counter() - reads_start_time
+        sys.stderr.write("> overall_read_duration(processing inclusive): %s\n" % timedelta(seconds=np.round(slow5_read_duration)))
+        sys.stderr.write("> total: %s\n" % timedelta(seconds=np.round(reads_start_time_precise[0])))
 
         # for file in files:
         #     s5 = pyslow5.Open(file, 'r')
@@ -359,3 +371,5 @@ def get_reads(directory, read_ids=None, skip=False, n_proc=1, recursive=False, c
                     yield read
                     if cancel is not None and cancel.is_set():
                         return
+        fast5_read_duration = perf_counter() - reads_start_time
+        sys.stderr.write("> fast5_read_duration: %s\n" % timedelta(seconds=np.round(fast5_read_duration)))

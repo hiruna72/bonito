@@ -1,5 +1,6 @@
 """
 Bonito CRF basecalling
+conditional random field (CRF)
 """
 
 import torch
