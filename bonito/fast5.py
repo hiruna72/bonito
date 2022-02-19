@@ -335,25 +335,25 @@ def get_raw_data(filename, read_ids=None, skip=False):
                 yield Read(f5_fh.get_read(read_id), filename)
 
 
-def get_reads(directory, read_ids=None, skip=False, n_proc=1, recursive=False, cancel=None, use_slow5=False):
+def get_reads(directory, read_ids=None, skip=False, n_proc=1, recursive=False, cancel=None, use_slow5=False, slow5_threads=4, slow5_batchsize=4096):
     """
     Get all reads in a given `directory`.
     """
     reads_start_time = perf_counter()
     reads_start_time_precise = [0.0]
     if(use_slow5):
-        sys.stderr.write("use_slow5\n")
+        sys.stderr.write("\nuse_slow5 with %d threads and batchsize %d\n" % (slow5_threads, slow5_batchsize))
         pattern = "**/*.*low5" if recursive else "*.*low5"
         files = (x for x in glob(directory + "/" + pattern, recursive=True))
         for file in files:
             s5 = pyslow5.Open(file, 'r')
-            for read in s5.seq_reads(pA=True, aux='all'):
+            for read in s5.seq_reads_multi(threads=slow5_threads, batchsize=slow5_batchsize, pA=True, aux='all'):
                 yield Read(read, file, False, s5, use_slow5, reads_start_time_precise, True)
                 if cancel is not None and cancel.is_set():
                     return
         slow5_read_duration = perf_counter() - reads_start_time
-        sys.stderr.write("> overall_read_duration(processing inclusive): %s\n" % timedelta(seconds=np.round(slow5_read_duration)))
-        sys.stderr.write("> total: %s\n" % timedelta(seconds=np.round(reads_start_time_precise[0])))
+        sys.stderr.write("> total_read_time_including_pyslow5_and_python: %s\n" % timedelta(seconds=np.round(reads_start_time_precise[0])))
+        sys.stderr.write("> overall_read_yield_duration(processing inclusive): %s\n" % timedelta(seconds=np.round(slow5_read_duration)))
 
         # for file in files:
         #     s5 = pyslow5.Open(file, 'r')
